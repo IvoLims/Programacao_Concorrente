@@ -137,20 +137,22 @@ class Bank{
 		accounts = new Account[n];
 		for(int i=0; i<accounts.length; ++i) accounts[i] = new Account();
 	}
-	public synchronized void deposit(int id,int val) throws InvalidAccount{
-		/* if(id<0 || id >= accounts.length) throw new InvalidAccount();
+	/* Passar de public synchronized void deposit(int id,int val) throws InvalidAccount{
+		if(id<0 || id >= accounts.length) throw new InvalidAccount();
 		accounts[id].deposit(val);
 
 		Ou get(id).deposit(val);*/
+	public void deposit(int id,int val) throws InvalidAccount{
 		Account c = get(id);
 		synchronized(this){
 			c.deposit(val);
 		}
 	}
-	public synchronized void witdraw(int id, int val) throws InvalidAccount, NotEnoughFunds{
-		/* if(id < 0 || id >= accounts.length) throw new InvalidAccount();
+	/* public synchronized void witdraw(int id, int val) throws InvalidAccount, NotEnoughFunds{
+		if(id < 0 || id >= accounts.length) throw new InvalidAccount();
 		accounts[id].witdraw(val);
 		Ou get(id).witdraw(val);*/
+	public void witdraw(int id, int val) throws InvalidAccount, NotEnoughFunds{
 		Account c = get(id);
 		synchronized(this){
 			c.witdraw(val);
@@ -190,7 +192,7 @@ class Depositer extends Thread{
 }
 
 class Main{
-	public static void main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException, InvalidAccount{
 		final int N = 	Integer.parseInt(args[0]);
 		final int NC = 	Integer.parseInt(args[1]);
 		final int I = Integer.parseInt(args[2]);
@@ -211,13 +213,7 @@ class Main{
 
 		for(int i = 0; i<N; ++i){
 			a[i] = new Depositor(I,b);
-		}
-
-		for(int i = 0; i<N; ++i){
 			a[i].start();
-		}
-
-		for(int i = 0; i<N; ++i){
 			a[i].join();
 		}
 		System.out.println(b.totalBalance(todasContas));
