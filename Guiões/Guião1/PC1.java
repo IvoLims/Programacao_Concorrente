@@ -39,7 +39,7 @@ class Incrementer extends Thread{
 }
 
 class Main{
-	public staticvoid main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException{
 		final int N = 	Integer.parseInt(args[0]);
 		final int I = 	Integer.parseInt(args[1]);
 		for(int i = 0; i<N; ++i){
@@ -116,7 +116,7 @@ class Incrementer extends Thread{
 }
 
 class Main{
-	public staticvoid main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException{
 		final int N = 	Integer.parseInt(args[0]);
 		final int I = 	Integer.parseInt(args[1]);
 		Counter c = new Counter();
@@ -130,7 +130,7 @@ class Main{
 		for(int i = 0; i<N; ++i){
 			a[i].join();
 		}
-		System.out.println(c.value);
+		System.out.println(c.value());
 	}
 }
 
@@ -159,7 +159,7 @@ class Incrementer extends Thread{
 }
 
 class Main{
-	public staticvoid main(String[] args) throws InterruptedException{
+	public static void main(String[] args) throws InterruptedException{
 		final int N = 	Integer.parseInt(args[0]);
 		final int I = 	Integer.parseInt(args[1]);
 		Counter c = new Counter();
@@ -173,7 +173,7 @@ class Main{
 		for(int i = 0; i<N; ++i){
 			a[i].join();
 		}
-		System.out.println(c.value);
+		System.out.println(c.value());
 	}
 }
 
