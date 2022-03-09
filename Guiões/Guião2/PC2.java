@@ -131,7 +131,7 @@ class Bank{
 	public Account[] accounts;
 	private Account get(int id) throws InvalidAccount{
 		if(id < 0 || id >= accounts.length) throw new InvalidAccount();
-		return accounts[id]
+		return accounts[id];
 	}
 	public Bank(int n){ 
 		accounts = new Account[n];
@@ -219,9 +219,128 @@ class Main{
 		System.out.println(b.totalBalance(todasContas));
 	}
 }
+
 /* 3. Acrescente o método transferir à classe Banco: 
 
 void transfer(int from, int to, int amount) throws InvalidAccount, NotEnoughFunds;
 
 Considere a viabilidade de este ser implementado simplesmente como a composição sequencial das operações de débito e crédito já implementadas. */
 
+public class NotEnoughFunds extends Exception{
+	public NotEnoughFundsException(){super();}
+	public NotEnoughFundsException(String msg){
+		super("Sem Fundos Suficientes "+msg);
+	}
+}
+
+public class InvalidAccount extends Exception{
+	public InvalidAccountException(){super();}
+	public InvalidAccountException(String msg){
+		super("Conta Invalida "+msg);
+	}
+}
+
+class Bank{
+	private static class Account{
+		private int balance;
+		public synchronized int balance(){
+			return balance;
+		}
+		public void deposit(int val){
+			balance += val;
+		}
+		public void witdraw(int val) throws NotEnoughFunds{
+			if (balance < val) throw new NotEnoughFunds();
+			balance -= val;
+		}
+	}
+	public Account[] accounts;
+	private Account get(int id) throws InvalidAccount{
+		if(id < 0 || id >= accounts.length) throw new InvalidAccount();
+		return accounts[id];
+	}
+	public Bank(int n){ 
+		accounts = new Account[n];
+		for(int i=0; i<accounts.length; ++i) accounts[i] = new Account();
+	}
+	public void deposit(int id,int val) throws InvalidAccount{
+		Account c = get(id);
+		synchronized(c){
+			c.deposit(val);
+		}
+	}
+	public void witdraw(int id, int val) throws InvalidAccount, NotEnoughFunds{
+		Account c = get(id);
+		synchronized(c){
+			c.witdraw(val);
+		}
+	}
+	public int totalBalance(int accounts[]) throws InvalidAccount{
+		int total = 0;
+		for(int id : accounts){
+			total += get(id).balance();
+		}
+		return total;
+	}
+	public void transfer(int from, int to, int val) throws InvalidAccount, NotEnoughFundsException{
+		if(from == to) return;
+		Account cfrom = get(from);
+		Account cto = get(to);
+		if(from < to){
+			a1 = cfrom;
+			a2 = cto;
+		} else{
+			a1 = cto;
+			a2 = from;
+		}
+		synchronized(a1){
+			synchronized(a2){
+				cfrom.witdraw(val);
+		        cto.deposit(val);
+			}
+		}
+	}
+}
+
+class Depositer extends Thread{
+	final int iterations;
+	final Bank b;
+	Depositor(int iterations, Bank b){ 
+		this.iterations = iterations;
+	    this.b = b;
+	}
+	public void run(){
+		for(int i = 0; i<iterations; ++i){
+			b.deposit(i % b.accounts.length,1);
+		}
+	}
+}
+
+class Main{
+	public static void main(String[] args) throws InterruptedException, InvalidAccount{
+		final int N = 	Integer.parseInt(args[0]);
+		final int NC = 	Integer.parseInt(args[1]);
+		final int I = Integer.parseInt(args[2]);
+
+		Bank b = new Bank(NC);
+		Thread[] a = new Thread[N];
+		int todasContas = new int[NC];
+
+		for(int i = 0; i<NC; ++i){
+			todasContas[i] = i;
+		}
+
+		/*
+		for(int i = 0; i<NC; ++i){
+			b.deposit(i, 1000);
+		}
+		*/
+
+		for(int i = 0; i<N; ++i){
+			a[i] = new Depositor(I,b);
+			a[i].start();
+			a[i].join();
+		}
+		System.out.println(b.totalBalance(todasContas));
+	}
+}
