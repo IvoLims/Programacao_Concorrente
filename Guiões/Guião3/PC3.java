@@ -1,5 +1,7 @@
 import java.util.HashMap;
-import java.util.concurrent.locks;
+import java.util.concurrent.Lock;
+import java.util.concurrent.ReentrantLock;
+import java.util.Collections;
 
 /*1. Modifique o exercício do banco de modo a que, em vez de existir um número fixo de contas,
 seja possível criar contas e fechar contas, como na seguinte interface:
@@ -49,75 +51,141 @@ class Bank{
 		}
 		Lock l = new ReentrantLock();
 	}
-	HashMap<Integer,Account> accounts = new HashMap<>();
-	Lock l = new ReentrantLock();
-	int lastId = 0;
+	private HashMap<Integer,Account> accounts = new HashMap<>();
+	private Lock l = new ReentrantLock();
+	private int lastId = 0;
     public int createAccount(int initialBalance){
     	//Nenhum destes são dependentes logo podem estar fora
     	Account c = new Account();
-    	c.deposit(initialBalance);
     	l.lock();
     	try{
-    	    lastId+=1;
-    	    int id = lastId;
-    	    accounts.put(id,c); //Colocar na hashMap
-    	    return id;
+    		accounts.put(lastId++,c.deposit(initialBalance)); //Colocar na hashMap
         }finally{
         	l.unlock();
         }
+        return lastId - 1;
     }
     public int closeAccount(int id) throws InvalidAccount{
+    	Account c;
     	l.lock();
-    	Account c = accounts.get(id);
-    	if(c == null) throw new InvalidAccount();
-    	c.remove(id)
-    	l.unlock();
+    	try{
+    		Account c = accounts.get(id);
+    	    if(c == null) throw new InvalidAccount();
+    	    c.remove(id);
+    	    c.l.lock();
+    	}finally{
+    		l.unlock();
+    	}try{
+    	    return c.balance();
+    	}finally{
+    		c.l.unlock();
+    	}
     }
 	public void deposit(int id,int val) throws InvalidAccount{
-		l.lock();
+		Account c;
+		l.lock(); //Lock do Banco
 		try{
-			Account c = accounts.get(id);
+			c = accounts.get(id);
 		    if(c == null) throw new InvalidAccount();
-		    c.deposit(val);
+		    c.l.lock();
 		}finally{
 			l.unlock();
 		}
+		try{
+			c.deposit(val);
+		}finally{
+			c.l.unlock();
+		}
 	}
 	public void witdraw(int id, int val) throws InvalidAccount, NotEnoughFunds{
+		Account c;
 		l.lock();
 		try{
-			Account c = accounts.get(id);
+			c = accounts.get(id);
 			if(c == null) throw new InvalidAccount();
-			c.witdraw(val);
+			c.l.lock(); //Lock Conta
 		} finally{
 			l.unlock();
 		}
+		try{
+			c.witdraw(val);
+		} finally{
+			c.l.unlock();
+		}
 	}
-	public int totalBalance(int accounts[]) throws InvalidAccount{
+	public int totalBalance(int accs[]) throws InvalidAccount{
+		accs.clone();
+		Arrays.sort(acs);
 		int total = 0;
-		for(int id : accounts){
-			total += get(id).balance();
+		Account[] a = new Account[accs.length];
+		l.lock();
+		try{
+			for(int i = 0; i < accs.length; i++){
+			    c = accounts.get(accs[i]);
+			    if(c == null) throw new InvalidAccount(); 
+                a[i] = c;
+            }
+            for(Account c : a) c.l.lock();
+		}finally{
+			l.unlock();
+		}try{
+			for(Account c : a){
+				int val = c.balance();
+				total += val;
+			}
+		}finally{
+			c.l.unlock();
 		}
 		return total;
 	}
 	public void transfer(int from, int to, int val) throws InvalidAccount, NotEnoughFundsException{
 		if(from == to) return;
-		Account cfrom = get(from);
-		Account cto = get(to);
+		if(!this.accounts.containsKey(from) || !this.accounts.containsKey(to)) throw new InvalidAccount();
+		Account cfrom, cto, a1, a2;
+		l.lock();
+		try{
+		cfrom = get(from);
+		cto = get(to);	
 		if(from < to){
 			a1 = cfrom;
 			a2 = cto;
-		} else{
+		}else{
 			a1 = cto;
 			a2 = from;
 		}
-		synchronized(a1){
-			synchronized(a2){
-				cfrom.witdraw(val);
-		        cto.deposit(val);
-			}
+		a1.l.lock();
+		a2.l.lock();
+		}finally{
+			l.unlock();
+		}
+		try{
+			cfrom.witdraw(val);
+		    cto.deposit(val);
+		}finally{
+			a1.l.unlock();
+			a2.l.unlock();
 		}
 	}
+	int accountBalance(int id) throws InvalidAccount {
+        this.lock.lock();
+        Account a;
+
+        try {
+            a = this.accounts.get(id);
+
+            if (a == null) throw new InvalidAccount();
+
+            a.lock.lock();
+        } finally {
+            this.lock.unlock();
+        }
+
+        try {
+            return a.balance();
+        } finally {
+            a.lock.unlock();
+        }
+    }
 }
 
 class Depositer extends Thread{
@@ -134,31 +202,36 @@ class Depositer extends Thread{
 	}
 }
 
-class Main{
-	public static void main(String[] args) throws InterruptedException, InvalidAccount{
-		final int N = 	Integer.parseInt(args[0]);
-		final int NC = 	Integer.parseInt(args[1]);
-		final int I = Integer.parseInt(args[2]);
+public class Main {
+    public static void main(String args[]) {
+            try {
+                int accounts[] = new int[10];
+                int n = 10;
+                Bank b = new Bank();
 
-		Bank b = new Bank(NC);
-		Thread[] a = new Thread[N];
-		int todasContas = new int[NC];
+                for (int i = 0; i < n; i++) accounts[i] = b.createAccount(i+1);
+                for (int i = 0; i < n; i++) b.deposit(accounts[i], 100*(i+1));
 
-		for(int i = 0; i<NC; ++i){
-			todasContas[i] = i;
-		}
+                printAccountBalances(accounts, b, n);
 
-		/*
-		for(int i = 0; i<NC; ++i){
-			b.deposit(i, 1000);
-		}
-		*/
+                System.out.println("Closed account 5 with $" + b.closeAccount(5) + ".");
 
-		for(int i = 0; i<N; ++i){
-			a[i] = new Depositor(I,b);
-			a[i].start();
-			a[i].join();
-		}
-		System.out.println(b.totalBalance(todasContas));
-	}
+                b.transfer(9, 0, 300);
+                int newList[] = {0,1,2,3,4,6,7,8,9};
+                System.out.println(b.totalBalance(newList));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+    }
+
+    public static void printAccountBalances(int accounts[], Bank b, int n) throws InvalidAccount, NotEnoughFunds {
+        for (int i = 0; i < n; i++) {
+            try {
+                System.out.println("Account " + i + ": " + b.accountBalance(accounts[i]));
+            } catch (InvalidAccount ia) {
+                System.out.println("Account "+ i + " does not exist.");
+            }
+        }
+    }
 }
