@@ -47,34 +47,6 @@ public class BoundedBuffer {
     }
 }
 
-public class Main{
-	public static void main(String[] args){
-		BoundedBuffer b = new  BoundedBuffer(20);
-		
-		new Thread(() -> {
-			try{
-				for(int i = 1;;++i){
-					System.out.println("Vou fazer put\n");
-					b.put(i);
-					System.out.println("Fiz put de " + i);
-					Thread.sleep(200);
-					}
-			}catch(InterruptedException e){}
-		}).start();
-
-		new Thread(() -> {
-			try{
-				for(int i = 1;;++i){
-					System.out.println("Vou fazer get\n");
-					int v = b.get();
-					System.out.println("O get retornou "+v);
-					Thread.sleep(200);
-					}
-			}catch(InterruptedException e){}			}
-		}).start();
-	}
-}
-
 //Para um tipo genérico
 public class BoundedBuffer<T> {
 	private T[] buf;
@@ -116,6 +88,35 @@ public class BoundedBuffer<T> {
 com P produtores e C consumidores, com um número total de threads C + P = N e
 tempos de produção e consumo Tp e Tc. Obtenha experimentalmente o número óptimo de
 threads de cada tipo a utilizar para maximizar o débito. */
+
+//Para o tipo Int
+public class Main{
+	public static void main(String[] args){
+		BoundedBuffer b = new  BoundedBuffer(20);
+		
+		new Thread(() -> {
+			try{
+				for(int i = 1;;++i){
+					System.out.println("Vou fazer put\n");
+					b.put(i);
+					System.out.println("Fiz put de " + i);
+					Thread.sleep(200);
+					}
+			}catch(InterruptedException e){}
+		}).start();
+
+		new Thread(() -> {
+			try{
+				for(int i = 1;;++i){
+					System.out.println("Vou fazer get\n");
+					int v = b.get();
+					System.out.println("O get retornou "+v);
+					Thread.sleep(200);
+					}
+			}catch(InterruptedException e){}			}
+		}).start();
+	}
+}
 
 /* 3. Escreva uma abstracção para permitir que N threads se sincronizem:
 class Barreira {
