@@ -18,7 +18,8 @@ public class BoundedBuffer {
 	//private int len = 0; Não necessário pk o semáforo trata disto
 	Semaphore items; //nº de items iniciais
 	Semaphore slots //slots livres
-	Semaphore mut = new Semaphore(1); // para exclusão mútua
+	Semaphore mutget = new Semaphore(1); // para exclusão mútua
+	Semaphore mutset = new Semaphore(1);
     public BoundedBuffer(int N) {
 	    items = new Semaphore(0); //Existem 0 items iniciais
     	slots = new Semaphore(N); //Existem N slots
@@ -27,25 +28,89 @@ public class BoundedBuffer {
     public int get() throws InterruptedException {
     	//if(len == 0) throw new InterruptedException();
     	int res;
-    	mut.acquire();
+    	mutget.acquire();
     	res = buf[iget];
     	iget = (iget +1) % buf.length;
-    	mut.release();
+    	mutget.release();
     	slots.release();
     	//len -= 1;
     	return res;
     }
     public void put(int v) throws InterruptedException {
     	slots.acquire();
-    	mut.acquire();
+    	mutput.acquire();
     	buf[iput] = v;
     	iput = (iput + 1) % buf.length;
     	//len += 1;
-    	mut.release();
+    	mutput.release();
     	items.release();
     }
 }
 
+public class Main{
+	public static void main(String[] args){
+		BoundedBuffer b = new  BoundedBuffer(20);
+		
+		new Thread(() -> {
+			try{
+				for(int i = 1;;++i){
+					System.out.println("Vou fazer put\n");
+					b.put(i);
+					System.out.println("Fiz put de " + i);
+					Thread.sleep(200);
+					}
+			}catch(InterruptedException e){}
+		}).start();
+
+		new Thread(() -> {
+			try{
+				for(int i = 1;;++i){
+					System.out.println("Vou fazer get\n");
+					int v = b.get();
+					System.out.println("O get retornou "+v);
+					Thread.sleep(200);
+					}
+			}catch(InterruptedException e){}			}
+		}).start();
+	}
+}
+
+//Para um tipo genérico
+public class BoundedBuffer<T> {
+	private T[] buf;
+	private int iget = 0;
+	private int iput = 0;
+	//private int len = 0; Não necessário pk o semáforo trata disto
+	Semaphore items; //nº de items iniciais
+	Semaphore slots //slots livres
+	Semaphore mutget = new Semaphore(1); // para exclusão mútua
+	Semaphore mutset = new Semaphore(1);
+    public BoundedBuffer(int N) {
+	    items = new Semaphore(0); //Existem 0 items iniciais
+    	slots = new Semaphore(N); //Existem N slots
+    	buf = new T[N]; 
+    }
+    public T get() throws InterruptedException {
+    	//if(len == 0) throw new InterruptedException();
+    	T res;
+    	mutget.acquire();
+    	res = buf[iget];
+    	iget = (iget +1) % buf.length;
+    	mutget.release();
+    	slots.release();
+    	//len -= 1;
+    	return res;
+    }
+    public void put(T v) throws InterruptedException {
+    	slots.acquire();
+    	mutput.acquire();
+    	buf[iput] = v;
+    	iput = (iput + 1) % buf.length;
+    	//len += 1;
+    	mutput.release();
+    	items.release();
+    }
+}
 
 /* 2. Considere um cenário produtor/consumidor sobre o BoundedBuffer do exercício anterior,
 com P produtores e C consumidores, com um número total de threads C + P = N e
