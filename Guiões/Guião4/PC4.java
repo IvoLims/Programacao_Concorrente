@@ -119,11 +119,46 @@ public class Main{
 }
 
 /* 3. Escreva uma abstracção para permitir que N threads se sincronizem:
+
 class Barreira {
 Barreira (int N) { ... }
 void await() throws InterruptedException { ... }
 }
+
 A operação await deverá bloquear até que as N threads o tenham feito; nesse momento
-o método deverá retornar em cada thread. a) Suponha que cada thread apenas vai invocar
-await uma vez sobre o objecto. b) Modifique a implementação para permitir que a operação possa ser usada várias vezes por cada thread (barreira reutilizável), de modo a suportar
+o método deverá retornar em cada thread.
+
+a) Suponha que cada thread apenas vai invocar await uma vez sobre o objecto. */
+
+class Barreira {
+	private final int N;
+	private int c = 0;
+	private Semaphore mut = new Semaphore(1);
+	private Semaphore sem = new Semaphore(0); // para o wait
+	public Barreira (int N) { this.N = N; }
+	public void await() throws InterruptedException{
+		mut.acquire();
+		c+=1;
+		int v = c;
+		mut.release();
+		if(v < N){
+			sem.acquire();
+		}else{
+			for(int i = 0; i<N; ++i){
+				sem.release();
+			}			
+		}
+		/* Outra forma:
+		 
+		if(v == N){
+			for(int i = 0; i<N; ++i){
+				sem.release();
+			}
+		sem.acquire(); 
+	    }*/ 
+	}
+}
+
+/* b) Modifique a implementação para permitir que a operação possa
+ ser usada várias vezes por cada thread (barreira reutilizável), de modo a suportar
 a sincronização no fim de cada uma de várias fases de computação. */
