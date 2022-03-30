@@ -17,7 +17,7 @@ public class BoundedBuffer {
 	private int iput = 0;
 	//private int len = 0; Não necessário pk o semáforo trata disto
 	Semaphore items; //nº de items iniciais
-	Semaphore slots //slots livres
+	Semaphore slots; //slots livres
 	Semaphore mutget = new Semaphore(1); // para exclusão mútua
 	Semaphore mutset = new Semaphore(1);
     public BoundedBuffer(int N) {
@@ -54,7 +54,7 @@ public class BoundedBuffer<T> {
 	private int iput = 0;
 	//private int len = 0; Não necessário pk o semáforo trata disto
 	Semaphore items; //nº de items iniciais
-	Semaphore slots //slots livres
+	Semaphore slots; //slots livres
 	Semaphore mutget = new Semaphore(1); // para exclusão mútua
 	Semaphore mutset = new Semaphore(1);
     public BoundedBuffer(int N) {
@@ -113,7 +113,7 @@ public class Main{
 					System.out.println("O get retornou "+v);
 					Thread.sleep(200);
 					}
-			}catch(InterruptedException e){}			}
+			}catch(InterruptedException e){}
 		}).start();
 	}
 }
