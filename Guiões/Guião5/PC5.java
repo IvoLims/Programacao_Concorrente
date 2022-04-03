@@ -145,3 +145,29 @@ class Barreira {
 /* Falha quando a thread mais adiantada faz o await acorda todas consegue sair liberta a exclusao 
 mutua se chamar o await outravez pode voltar a ganhar a exclusao mutua faz o c +1 e poe o w = true e 
 as outras que estavam a acordar nao vao conseguir fazer nada . */
+
+// Versão Correta
+
+public class Barreira{
+    public class Instance{
+        int c = 0;
+    }
+    private final int N;
+    private Instance e = new Instance(); //Representa uma etapa
+
+    public Barreira(int N){ this.N = N;}
+
+    public synchronized Instance await() throws InterruptedException{
+        Instance e_snapshot = e; 
+        e.c += 1;
+    
+        if(e.c==1){
+            notifyAll();
+            e.c = 0;
+            e = new Instance();
+        } else while(e == e_snapshot){
+            wait(); 
+        }
+        return e_snapshot;
+    }
+}
